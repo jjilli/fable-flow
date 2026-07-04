@@ -4,7 +4,7 @@ A Claude Code plugin that turns one task description into a shipped branch using
 
 ```
             ┌─ scout (Sonnet 5) ── structure ──┐
-   task ──> ├─ scout (Sonnet 5) ── conventions ├──> architect (Fable 5, high effort)
+   task ──> ├─ scout (Sonnet 5) ── conventions ├──> architect (Fable 5, xhigh effort)
             └─ scout (Sonnet 5) ── blast-radius┘         │  file-disjoint track plan
                                                           ▼
             ┌─ implementer (Fable 5, medium) ── own worktree ─┐
@@ -33,14 +33,16 @@ Or for development, load it directly without installing: `claude --plugin-dir /p
 /fable-flow:ship add rate limiting to the public API --pr
 ```
 
-Or run phases individually: `/fable-flow:explore`, `/fable-flow:plan`, `/fable-flow:implement`, `/fable-flow:review`. Pipeline state and artifacts live in `.fable-flow/` in your repo (git-ignored locally).
+Or run phases individually: `/fable-flow:explore`, `/fable-flow:plan`, `/fable-flow:implement`, `/fable-flow:review` — and when you find a bug by hand afterwards, `/fable-flow:iterate <bug>` reproduces it, fixes it with a regression test, and banks the lesson.
+
+The pipeline remembers: lessons from every run and iteration are stored in `.fable-flow/memory/lessons/` and injected into the architect, implementers, and reviewers of the next run. Pipeline state, artifacts, and memory live in `.fable-flow/` in your repo (git-ignored locally).
 
 ## Contents
 
 | Component | Files |
 |---|---|
-| Commands | `commands/ship.md`, `explore.md`, `plan.md`, `implement.md`, `review.md` |
-| Agents | `agents/scout.md` (Sonnet 5), `architect.md` (Fable 5 · high), `implementer.md` (Fable 5 · medium · worktree), `reviewer.md` (Opus 4.8 · high) |
+| Commands | `commands/ship.md`, `explore.md`, `plan.md`, `implement.md`, `review.md`, `iterate.md` |
+| Agents | `agents/scout.md` (Sonnet 5), `architect.md` (Fable 5 · xhigh), `implementer.md` (Fable 5 · medium · worktree), `reviewer.md` (Opus 4.8 · high) |
 | Skill | `skills/fable-prompting/` — the distilled Fable 5 prompting reference |
 
 **Read [GUIDE.md](GUIDE.md)** for the full development guide: how the pipeline works, customization, cost/runtime expectations, and how to extend it.

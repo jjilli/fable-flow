@@ -16,7 +16,7 @@ Run the Review phase of the fable-flow pipeline against the current branch.
 **Input:** $ARGUMENTS  (`--base REF` diff base, default: the base recorded in `.fable-flow/plan.md`, else the default branch · `--reviewers N` lens count, default 3 with a plan that has multiple tracks, else 2 · `--rounds N` max review→fix cycles when `--fix`, default 2 · `--fix` apply fixes for actionable findings; without it this command only reports)
 
 1. Resolve the base ref. Load `.fable-flow/plan.md` and `.fable-flow/task.md` if present — reviewers verify against them; if absent, reviewers verify against the diff's own apparent intent and say so.
-2. Spawn `fable-flow:reviewer` subagents **in a single message**, lenses in priority order `correctness`, `fidelity`, `integration`. Each prompt: the requirements, the plan (if any), the base ref, its lens. Save reports to `.fable-flow/review-round-<r>-<lens>.md`.
+2. Spawn `fable-flow:reviewer` subagents **in a single message**, lenses in priority order `correctness`, `fidelity`, `integration`. Each prompt: the requirements, the plan (if any), the base ref, any relevant lessons from `.fable-flow/memory/lessons/`, its lens. Save reports to `.fable-flow/review-round-<r>-<lens>.md`.
 3. Triage: **actionable** = severity blocker/major with confidence medium+. Everything else is reported but never fix-looped.
 
 Without `--fix`, the deliverable is the assessment: report the verdicts and findings ranked most-severe first, with each reviewer's execution evidence, and stop — don't change any files.

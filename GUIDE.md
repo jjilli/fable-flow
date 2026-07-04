@@ -11,13 +11,17 @@ fable-flow implements this pipeline as a Claude Code plugin:
 | Stage | Who | Model · effort | Parallelism | Output |
 |---|---|---|---|---|
 | Explore | `scout` ×3 | Sonnet 5 (`model: sonnet`) | 3 concurrent, one lens each | `.fable-flow/explore-*.md` |
-| Plan | `architect` | Fable 5 (`model: fable`) · `effort: high` | 1 | `.fable-flow/plan.md` |
+| Plan | `architect` | Fable 5 (`model: fable`) · `effort: xhigh` | 1 | `.fable-flow/plan.md` |
 | Implement | `implementer` ×N | Fable 5 · `effort: medium` · `isolation: worktree` | N concurrent, own git worktree each | track branches + reports |
 | Merge | orchestrator (your session) | session model | — | `fable-flow/<slug>` integration branch |
 | Review | `reviewer` ×N | Opus 4.8 (`model: opus`) · `effort: high` | N concurrent, one lens each | `.fable-flow/review-*.md`, fix loop |
 | Ship | orchestrator | session model | — | local branch, or PR with `--pr` |
+| Remember | orchestrator | session model | — | `.fable-flow/memory/lessons/` updated |
+| Iterate (on demand) | orchestrator + `implementer`/`reviewer` | session + Fable/Opus | per bug | fixes, regression tests, `.fable-flow/iterations/*.md` |
 
 The dashed feedback arrow in the original diagram — review findings flowing back to implementation — is the bounded fix loop: actionable findings (blocker/major at medium+ confidence) get fixed on the integration branch and only the lenses that blocked re-run, at most `--rounds` times (default 2).
+
+Two stages go beyond the original diagram. **Remember** closes each run into per-repo memory (`.fable-flow/memory/lessons/`), which Phase 0 of the next run reads and injects into the architect, implementers, and reviewers — the Fable 5 guide's "construct a memory system" recommendation, wired into the cycle. **Iterate** (`/fable-flow:iterate`) is the loop for bugs you find by hand after implementation: reproduce first, root-cause, fix with a regression test, one correctness review pass, then bank the lesson.
 
 Model aliases (`sonnet`, `opus`, `fable`) always resolve to the current generation, so today this is exactly Sonnet 5 / Fable 5 / Opus 4.8 and it tracks future releases automatically. Pin full IDs if you need reproducibility (§6).
 
@@ -60,6 +64,7 @@ Stage commands run phases individually and share state through `.fable-flow/`:
 - `/fable-flow:plan [task] [--tracks N]` — architect (runs explore first if digests are missing)
 - `/fable-flow:implement [--base REF]` — implementers + merge, from the saved plan
 - `/fable-flow:review [--base REF] [--fix]` — reviewers on the current branch; **report-only unless `--fix`**
+- `/fable-flow:iterate <bug description(s)> [--no-review]` — the post-implementation loop: reproduce the bug (it refuses to fix what it can't reproduce), root-cause it against the plan, fix on the current branch (an implementer subagent for bigger fixes), add a regression test, run one correctness-lens review, and update memory
 
 Use stages while learning the pipeline, to resume after a failure (ship names the stage to resume from), or to review a branch fable-flow didn't build.
 
@@ -82,7 +87,9 @@ Everything the pipeline learns and decides is written to `.fable-flow/` in the t
 ├── explore-blast-radius.md
 ├── plan.md                      the architect's plan (contracts, tracks, merge order)
 ├── track-<n>-report.md          implementer reports (branch, commit, test evidence)
-└── review-round-<r>-<lens>.md   reviewer reports
+├── review-round-<r>-<lens>.md   reviewer reports
+├── iterations/<n>-<slug>.md     iterate records (bug, repro evidence, root cause, fix, tests)
+└── memory/lessons/<slug>.md     cross-run lessons — read at Phase 0, written at Phase 7 and by iterate
 ```
 
 This is the audit trail (every claim in the final summary traces to a file here) and the resume mechanism (stage commands read whatever exists).
@@ -93,12 +100,13 @@ Fable prompting is different from past models, and this plugin is built around t
 
 1. **De-prescribe.** Prompts written for older models are too prescriptive for Fable 5 and *degrade* output. The agent files state goals, constraints, and output contracts — not numbered procedures. When you extend them, resist adding step lists and "CRITICAL: YOU MUST" language.
 2. **Full spec up front.** Fable does its best long-horizon work when the first turn carries the complete task. That's why the orchestrator inlines the whole track manifest, contracts, and conventions digest into each implementer prompt rather than letting them re-discover context.
-3. **Effort is the control surface.** Planning and review run `high`; implementation of a pre-planned track runs `medium` (Fable's `medium` is strong — the guide notes even `low` often beats prior models' `xhigh`). Per-agent `effort:` frontmatter is how the diagram's "High Planning / Medium Implementer / High Review" labels are realized.
+3. **Effort is the control surface.** Planning runs `xhigh` (one agent whose output gates everything downstream), review runs `high`, and implementation of a pre-planned track runs `medium` (Fable's `medium` is strong — the guide notes even `low` often beats prior models' `xhigh`). Per-agent `effort:` frontmatter is how these labels are realized.
 4. **Fresh-context verifiers beat self-critique.** Reviewers are separate agents with clean context and an adversarial stance, per the guide's scaffolding advice — never the implementer grading its own work. The reviewer prompt also uses the coverage-first reporting language ("report every issue… do not filter") because Opus 4.8 follows conservative-reporting instructions so literally that recall drops.
 5. **Grounded progress.** The implementer, reviewer, and orchestrator all carry the guide's audit-your-claims snippet ("only report work you can point to evidence for") — this is what makes the final summary trustworthy after an hour of autonomous work.
 6. **Delegate freely, in parallel.** Fable dispatches and manages parallel subagents dependably, so the commands explicitly spawn scouts/implementers/reviewers in a single message to run concurrently instead of one-at-a-time.
 7. **Boundaries, stated.** Dirty trees are refused rather than stashed; `/fable-flow:review` without `--fix` reports and stops; PRs require `--pr`. Fable takes initiative — the prompts define where it must not.
 8. **Never ask for reasoning verbatim.** No prompt asks an agent to echo its thinking (that can trigger Fable's `reasoning_extraction` refusal). Agents report conclusions and evidence.
+9. **Memory in the loop.** The guide's "construct a memory system" recommendation is implemented directly: one lesson per file under `.fable-flow/memory/lessons/` with a one-line summary on top, injected into architect/implementer/reviewer prompts at the start of every run (Phase 0), and updated at the end of every run (Phase 7) and every iterate. The guide's memory-discipline snippet governs what's worth saving — lessons, not instances.
 
 The verbatim steering snippets live in [skills/fable-prompting/SKILL.md](skills/fable-prompting/SKILL.md) — that skill is also model-invocable, so Claude will pull it in automatically when you ask it to write or fix Fable-targeted prompts.
 
@@ -116,6 +124,8 @@ Overrides that beat frontmatter, in order: the `CLAUDE_CODE_SUBAGENT_MODEL` envi
 **Defaults for tracks / reviewers / rounds** live in prose in `commands/ship.md` — edit the flag-defaults line.
 
 **Add a review lens** (e.g. `security`): add the lens description to `agents/reviewer.md`'s lens list and to the lens order in `commands/ship.md` and `commands/review.md`. Same pattern for scout lenses.
+
+**Memory.** Lessons are per-repo and local — the whole `.fable-flow/` directory sits in `.git/info/exclude`, so memory never leaves your machine. To share hard-won lessons with a team, promote the stable ones into the repo's `CLAUDE.md` (all agents read that natively) and delete the local copies. To reset a repo's pipeline memory, delete `.fable-flow/memory/`. To inspect what the pipeline has learned, just read the files — they're plain Markdown with the summary on line one.
 
 **Team conventions:** put repo-specific rules (test commands, deploy constraints) in the target repo's `CLAUDE.md` — agents inherit it; don't fork the plugin for per-repo knowledge.
 
@@ -159,6 +169,8 @@ Facts worth knowing when editing:
 | Merge conflicts between tracks | The plan's ownership check should prevent this; if it happens, the Contracts section is the arbiter. Recurring conflicts mean the architect is splitting too aggressively — lower `--tracks`. |
 | Leftover worktrees or `fable-flow/*-t*` branches after a failed run | `git worktree list` → `git worktree remove <path>` (add `--force` if the tree is dirty), `git worktree prune`, `git branch -D fable-flow/<slug>-t<n>`. |
 | Review loop never converges | Findings surviving `--rounds` cycles are reported, not retried — read them; they're usually a real design problem or a plan/requirement mismatch. |
+| Found a bug after the pipeline finished | `/fable-flow:iterate <describe it>` — reproduces first, fixes with a regression test, updates memory. It refuses to fix what it can't reproduce; give it the repro detail it asks for. |
+| Memory contains a wrong or stale lesson | Delete or edit the file under `.fable-flow/memory/lessons/` — it's plain Markdown, and wrong lessons actively mislead future runs. |
 | Commands missing after install | Restart the session or `/reload-plugins`; confirm with `claude plugin list`. |
 | Pipeline feels slow | It's front-loaded deliberation: Fable turns run minutes. Use stage commands for tighter iteration, or lower effort/models per §6. |
 
@@ -169,3 +181,6 @@ Facts worth knowing when editing:
 - **Aliases over pinned model IDs by default** — the diagram named the *current* generation of each tier; aliases keep that meaning as generations advance. Pin IDs when you need frozen behavior.
 - **Review fixes happen on the integration branch, not by re-running tracks** — cheaper, and it matches the diagram's feedback arrow into a bounded loop instead of an unbounded rebuild.
 - **State in `.fable-flow/` via `.git/info/exclude`** — auditable and resumable without ever touching tracked files.
+- **Architect runs `xhigh`, above the diagram's "high" label** — planning is a single agent whose output gates every downstream track; the marginal cost of `xhigh` there is small against the cost of a bad plan. (The diagram is a starting point, not a contract.)
+- **One shared memory, orchestrator-managed** — not per-agent `memory:` frontmatter silos. A reviewer's lesson must reach the next run's architect, and worktree implementers can't read `.fable-flow/` anyway, so the orchestrator injects lessons into prompts and owns all writes. Iterate records keep instances; memory keeps lessons.
+- **Iterate refuses to fix unreproduced bugs** — a fix without a failing reproduction is a guess, and the pipeline's currency is evidence.

@@ -8,7 +8,7 @@
     {
       "name": "fable-flow",
       "source": "./",
-      "description": "Multi-agent shipping pipeline tuned for Claude Fable 5: scouts → architect → parallel worktree implementers → merge → Opus 4.8 review loop → PR."
+      "description": "Multi-agent shipping pipeline tuned for Claude Fable 5: scouts → xhigh architect → parallel worktree implementers → merge → Opus 4.8 review loop → PR, plus a bug-iteration flow and per-repo pipeline memory."
     }
   ]
 }

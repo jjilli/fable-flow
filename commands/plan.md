@@ -9,7 +9,7 @@ Run the Plan phase of the fable-flow pipeline.
 **Input:** $ARGUMENTS  (may refine or replace the task in `.fable-flow/task.md`; `--tracks N` caps parallel tracks, default 3)
 
 1. Load the task (arguments, else `.fable-flow/task.md`) and the three scout digests `.fable-flow/explore-*.md`. If digests are missing, run the Explore phase first exactly as `/fable-flow:explore` describes, then continue.
-2. Spawn one `fable-flow:architect` with: the task, all digests inline, the max track count, and `Base: <current branch> @ <HEAD sha>`.
+2. Spawn one `fable-flow:architect` with: the task, all digests inline, the max track count, any relevant lessons from `.fable-flow/memory/lessons/`, and `Base: <current branch> @ <HEAD sha>`.
 3. Save the plan verbatim to `.fable-flow/plan.md`.
 4. Verify track file-ownership is pairwise disjoint. If two tracks own the same file: one revision request to the architect naming the overlaps; if it still overlaps, collapse the overlapping tracks into one and note that you did.
 

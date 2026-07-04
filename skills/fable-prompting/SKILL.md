@@ -37,7 +37,7 @@ API: `output_config.effort` — `low | medium | high | xhigh | max`. In Claude C
 | `medium` | Routine implementation of a well-specified plan |
 | `low` | Short, scoped, latency-sensitive tasks; still strong on Fable 5 — often exceeds prior models' `xhigh` |
 
-The diagram roles in this plugin map as: **planning = high-effort thinking** (wide scope, full context synthesis), **implementation = medium** (narrow, pre-planned track), **review = high** (adversarial verification).
+The roles in this plugin map as: **planning = xhigh** (one agent whose output gates everything downstream — worth the ceiling), **implementation = medium** (narrow, pre-planned track), **review = high** (adversarial verification).
 
 ## Verbatim steering snippets
 
