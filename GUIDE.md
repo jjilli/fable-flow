@@ -1,0 +1,171 @@
+# fable-flow — Development Guide
+
+How to install, run, tune, and extend the fable-flow pipeline — and why its prompts are written the way they are.
+
+---
+
+## 1. What it is
+
+fable-flow implements this pipeline as a Claude Code plugin:
+
+| Stage | Who | Model · effort | Parallelism | Output |
+|---|---|---|---|---|
+| Explore | `scout` ×3 | Sonnet 5 (`model: sonnet`) | 3 concurrent, one lens each | `.fable-flow/explore-*.md` |
+| Plan | `architect` | Fable 5 (`model: fable`) · `effort: high` | 1 | `.fable-flow/plan.md` |
+| Implement | `implementer` ×N | Fable 5 · `effort: medium` · `isolation: worktree` | N concurrent, own git worktree each | track branches + reports |
+| Merge | orchestrator (your session) | session model | — | `fable-flow/<slug>` integration branch |
+| Review | `reviewer` ×N | Opus 4.8 (`model: opus`) · `effort: high` | N concurrent, one lens each | `.fable-flow/review-*.md`, fix loop |
+| Ship | orchestrator | session model | — | local branch, or PR with `--pr` |
+
+The dashed feedback arrow in the original diagram — review findings flowing back to implementation — is the bounded fix loop: actionable findings (blocker/major at medium+ confidence) get fixed on the integration branch and only the lenses that blocked re-run, at most `--rounds` times (default 2).
+
+Model aliases (`sonnet`, `opus`, `fable`) always resolve to the current generation, so today this is exactly Sonnet 5 / Fable 5 / Opus 4.8 and it tracks future releases automatically. Pin full IDs if you need reproducibility (§6).
+
+## 2. Install
+
+**As a plugin (normal use):**
+
+```bash
+claude plugin marketplace add /Users/kennae/Claude/fable-flow
+claude plugin install fable-flow@fable-flow
+```
+
+The repo is both the plugin and its own single-plugin marketplace (`.claude-plugin/marketplace.json` points at `./`). A plain directory works — no git required for a local marketplace.
+
+**For plugin development (no install):**
+
+```bash
+claude --plugin-dir /Users/kennae/Claude/fable-flow
+```
+
+**Publishing later:** push the directory to GitHub, then anyone can `claude plugin marketplace add <owner>/fable-flow` and install the same way.
+
+## 3. Running the pipeline
+
+```
+/fable-flow:ship <task description> [flags]
+```
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--tracks N` | 3 | Max parallel implementation tracks (the architect may use fewer) |
+| `--reviewers N` | 3 if multi-track, else 2 | Review lenses: correctness → fidelity → integration |
+| `--rounds N` | 2 | Max review→fix cycles before surviving findings are just reported |
+| `--base REF` | current branch | Base for tracks and for the review diff |
+| `--pr` | off | Push and open a GitHub PR at the end. Without it the pipeline stops at the local integration branch — publishing is deliberately opt-in. |
+
+Stage commands run phases individually and share state through `.fable-flow/`:
+
+- `/fable-flow:explore <task>` — scouts only
+- `/fable-flow:plan [task] [--tracks N]` — architect (runs explore first if digests are missing)
+- `/fable-flow:implement [--base REF]` — implementers + merge, from the saved plan
+- `/fable-flow:review [--base REF] [--fix]` — reviewers on the current branch; **report-only unless `--fix`**
+
+Use stages while learning the pipeline, to resume after a failure (ship names the stage to resume from), or to review a branch fable-flow didn't build.
+
+**What to expect at runtime:**
+
+- **Long turns are normal.** Fable 5 requests on hard tasks can run many minutes each; a full ship on a real feature is comfortably tens of minutes. That's the design — check in on it rather than watching it.
+- **Preconditions:** a git repo and a clean working tree. The pipeline refuses to start otherwise (it will never stash your uncommitted work).
+- **Permissions:** implementers edit files and run tests, the orchestrator creates branches and merges. Run in a permission mode you're comfortable with (`acceptEdits` works well); `--pr` additionally needs `gh` authenticated.
+- **Cost:** this is a premium pipeline by construction — several Fable 5 agents (higher per-token price than Opus) plus Opus reviewers per run. For routine tasks where you don't need it, don't use it; that's also why every command has `disable-model-invocation: true` — only you can trigger the pipeline, never the model on its own.
+
+## 4. State directory
+
+Everything the pipeline learns and decides is written to `.fable-flow/` in the target repo (added to `.git/info/exclude`, so it never shows up in your diffs):
+
+```
+.fable-flow/
+├── task.md                      task, flags, slug, base SHA
+├── explore-structure.md         scout digests
+├── explore-conventions.md
+├── explore-blast-radius.md
+├── plan.md                      the architect's plan (contracts, tracks, merge order)
+├── track-<n>-report.md          implementer reports (branch, commit, test evidence)
+└── review-round-<r>-<lens>.md   reviewer reports
+```
+
+This is the audit trail (every claim in the final summary traces to a file here) and the resume mechanism (stage commands read whatever exists).
+
+## 5. Why the prompts look like this — Fable 5 prompting
+
+Fable prompting is different from past models, and this plugin is built around the official guidance ([Prompting Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5) — distilled into the bundled `/fable-flow:fable-prompting` skill). If you edit the prompts, keep these principles or quality drops:
+
+1. **De-prescribe.** Prompts written for older models are too prescriptive for Fable 5 and *degrade* output. The agent files state goals, constraints, and output contracts — not numbered procedures. When you extend them, resist adding step lists and "CRITICAL: YOU MUST" language.
+2. **Full spec up front.** Fable does its best long-horizon work when the first turn carries the complete task. That's why the orchestrator inlines the whole track manifest, contracts, and conventions digest into each implementer prompt rather than letting them re-discover context.
+3. **Effort is the control surface.** Planning and review run `high`; implementation of a pre-planned track runs `medium` (Fable's `medium` is strong — the guide notes even `low` often beats prior models' `xhigh`). Per-agent `effort:` frontmatter is how the diagram's "High Planning / Medium Implementer / High Review" labels are realized.
+4. **Fresh-context verifiers beat self-critique.** Reviewers are separate agents with clean context and an adversarial stance, per the guide's scaffolding advice — never the implementer grading its own work. The reviewer prompt also uses the coverage-first reporting language ("report every issue… do not filter") because Opus 4.8 follows conservative-reporting instructions so literally that recall drops.
+5. **Grounded progress.** The implementer, reviewer, and orchestrator all carry the guide's audit-your-claims snippet ("only report work you can point to evidence for") — this is what makes the final summary trustworthy after an hour of autonomous work.
+6. **Delegate freely, in parallel.** Fable dispatches and manages parallel subagents dependably, so the commands explicitly spawn scouts/implementers/reviewers in a single message to run concurrently instead of one-at-a-time.
+7. **Boundaries, stated.** Dirty trees are refused rather than stashed; `/fable-flow:review` without `--fix` reports and stops; PRs require `--pr`. Fable takes initiative — the prompts define where it must not.
+8. **Never ask for reasoning verbatim.** No prompt asks an agent to echo its thinking (that can trigger Fable's `reasoning_extraction` refusal). Agents report conclusions and evidence.
+
+The verbatim steering snippets live in [skills/fable-prompting/SKILL.md](skills/fable-prompting/SKILL.md) — that skill is also model-invocable, so Claude will pull it in automatically when you ask it to write or fix Fable-targeted prompts.
+
+## 6. Customization
+
+**Models.** Each agent's `model:` accepts aliases (`sonnet`, `opus`, `haiku`, `fable`), full IDs (`claude-sonnet-5`, `claude-opus-4-8`, `claude-fable-5`), or `inherit` (use the session model). Two common edits:
+
+- *Cheaper pipeline:* set `agents/architect.md` and `agents/implementer.md` to `model: opus` (or `inherit` and run the session on the model you're paying for).
+- *Reproducible pipeline:* replace aliases with full IDs so a future model generation can't change behavior under you.
+
+Overrides that beat frontmatter, in order: the `CLAUDE_CODE_SUBAGENT_MODEL` environment variable, then a per-invocation model in the Agent tool call, then frontmatter, then the session model.
+
+**Effort.** Per-agent `effort:` takes `low|medium|high|xhigh|max`. Raise the implementer to `high` for gnarly codebases; drop scouts' thoroughness by adding `effort: low` to `agents/scout.md` for very large repos where recon cost matters.
+
+**Defaults for tracks / reviewers / rounds** live in prose in `commands/ship.md` — edit the flag-defaults line.
+
+**Add a review lens** (e.g. `security`): add the lens description to `agents/reviewer.md`'s lens list and to the lens order in `commands/ship.md` and `commands/review.md`. Same pattern for scout lenses.
+
+**Team conventions:** put repo-specific rules (test commands, deploy constraints) in the target repo's `CLAUDE.md` — agents inherit it; don't fork the plugin for per-repo knowledge.
+
+## 7. Developing the plugin itself
+
+Layout:
+
+```
+fable-flow/
+├── .claude-plugin/
+│   ├── plugin.json          manifest (name is the /fable-flow: namespace)
+│   └── marketplace.json     makes this repo installable as its own marketplace
+├── commands/                user-invoked pipeline verbs (flat .md, YAML frontmatter)
+├── agents/                  subagent definitions (frontmatter + system prompt)
+├── skills/fable-prompting/  auto-invocable knowledge skill
+├── README.md
+└── GUIDE.md
+```
+
+Workflow:
+
+1. Edit files.
+2. `claude plugin validate /Users/kennae/Claude/fable-flow --strict` — catches frontmatter YAML errors (note: an unquoted `argument-hint:` starting with `[` parses as a YAML array and silently drops your metadata — keep those values quoted).
+3. In a running session, `/reload-plugins` picks up changes; or test un-installed with `claude --plugin-dir …`.
+4. `claude plugin details fable-flow` shows the component inventory and projected token cost of what you're shipping into every session.
+
+Facts worth knowing when editing:
+
+- Commands and skills are namespaced by plugin name: `/fable-flow:ship`. Agents likewise: the orchestrator addresses `fable-flow:scout` etc.
+- `disable-model-invocation: true` on every command means only a human can start the (expensive) pipeline. The `fable-prompting` skill deliberately omits it so Claude can auto-load the reference.
+- `isolation: worktree` on the implementer is what gives each track its own checkout — stock Claude Code creates and cleans up the worktree; the implementer's first act is `git reset --hard <BASE_SHA>` so all tracks share an exact base regardless of what the worktree branched from.
+- Plugin agents ignore `hooks`, `mcpServers`, and `permissionMode` frontmatter by design; don't add them here.
+- Version bumps: update `version` in `plugin.json`; installed copies pick it up via `claude plugin update fable-flow`.
+
+## 8. Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `/fable-flow:ship` refuses to start | Dirty working tree — commit or stash yourself, then rerun. This is intentional. |
+| A Fable agent declines a benign task (security-adjacent code, bio/life-sciences code) | Fable 5's safety classifiers can false-positive near those domains. Rerun that stage with the agent's `model:` set to `opus` — Opus 4.8 is the official fallback model. |
+| Merge conflicts between tracks | The plan's ownership check should prevent this; if it happens, the Contracts section is the arbiter. Recurring conflicts mean the architect is splitting too aggressively — lower `--tracks`. |
+| Leftover worktrees or `fable-flow/*-t*` branches after a failed run | `git worktree list` → `git worktree remove <path>` (add `--force` if the tree is dirty), `git worktree prune`, `git branch -D fable-flow/<slug>-t<n>`. |
+| Review loop never converges | Findings surviving `--rounds` cycles are reported, not retried — read them; they're usually a real design problem or a plan/requirement mismatch. |
+| Commands missing after install | Restart the session or `/reload-plugins`; confirm with `claude plugin list`. |
+| Pipeline feels slow | It's front-loaded deliberation: Fable turns run minutes. Use stage commands for tighter iteration, or lower effort/models per §6. |
+
+## 9. Design decisions (so you don't re-litigate them)
+
+- **PR is opt-in (`--pr`)** even though the diagram ends at PR: publishing to a remote is an outward-facing action, so the default stops at a local branch you can inspect.
+- **The orchestrator refuses dirty trees instead of stashing** — the pipeline must never be the thing that loses your uncommitted work.
+- **Aliases over pinned model IDs by default** — the diagram named the *current* generation of each tier; aliases keep that meaning as generations advance. Pin IDs when you need frozen behavior.
+- **Review fixes happen on the integration branch, not by re-running tracks** — cheaper, and it matches the diagram's feedback arrow into a bounded loop instead of an unbounded rebuild.
+- **State in `.fable-flow/` via `.git/info/exclude`** — auditable and resumable without ever touching tracked files.

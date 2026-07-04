@@ -1,0 +1,14 @@
+{
+  "name": "fable-flow",
+  "owner": {
+    "name": "jamesj6"
+  },
+  "description": "Marketplace for the fable-flow plugin (this repository is both the marketplace and the plugin).",
+  "plugins": [
+    {
+      "name": "fable-flow",
+      "source": "./",
+      "description": "Multi-agent shipping pipeline tuned for Claude Fable 5: scouts → architect → parallel worktree implementers → merge → Opus 4.8 review loop → PR."
+    }
+  ]
+}

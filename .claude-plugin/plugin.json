@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "fable-flow",
+  "displayName": "Fable Flow",
+  "version": "0.1.0",
+  "description": "Multi-agent shipping pipeline tuned for Claude Fable 5: parallel Sonnet 5 scouts, a high-effort Fable 5 architect, Fable 5 implementers in isolated git worktrees, merge, and an Opus 4.8 adversarial review loop ending in a PR.",
+  "author": {
+    "name": "jamesj6"
+  },
+  "license": "MIT",
+  "keywords": [
+    "fable-5",
+    "multi-agent",
+    "orchestration",
+    "worktrees",
+    "code-review",
+    "pipeline"
+  ]
+}
