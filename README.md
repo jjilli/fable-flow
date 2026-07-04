@@ -21,11 +21,11 @@ Every prompt in this plugin follows the official [Prompting Claude Fable 5](http
 ## Install
 
 ```bash
-claude plugin marketplace add /path/to/fable-flow
+claude plugin marketplace add jjilli/fable-flow
 claude plugin install fable-flow@fable-flow
 ```
 
-Or for development, load it directly without installing: `claude --plugin-dir /path/to/fable-flow`
+From a local clone the same works with a path: `claude plugin marketplace add /path/to/fable-flow`. For plugin development, load it without installing: `claude --plugin-dir /path/to/fable-flow`
 
 ## Use
 

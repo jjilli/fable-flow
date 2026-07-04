@@ -30,19 +30,19 @@ Model aliases (`sonnet`, `opus`, `fable`) always resolve to the current generati
 **As a plugin (normal use):**
 
 ```bash
-claude plugin marketplace add /Users/kennae/Claude/fable-flow
+claude plugin marketplace add jjilli/fable-flow
 claude plugin install fable-flow@fable-flow
 ```
 
-The repo is both the plugin and its own single-plugin marketplace (`.claude-plugin/marketplace.json` points at `./`). A plain directory works — no git required for a local marketplace.
+The repo is both the plugin and its own single-plugin marketplace (`.claude-plugin/marketplace.json` points at `./`). A local clone or plain directory works the same way: `claude plugin marketplace add /path/to/fable-flow`.
 
 **For plugin development (no install):**
 
 ```bash
-claude --plugin-dir /Users/kennae/Claude/fable-flow
+claude --plugin-dir /path/to/fable-flow
 ```
 
-**Publishing later:** push the directory to GitHub, then anyone can `claude plugin marketplace add <owner>/fable-flow` and install the same way.
+**Releases:** published at https://github.com/jjilli/fable-flow. Each release is tagged `fable-flow--v<version>` via `claude plugin tag`, which checks that `plugin.json` and the marketplace entry agree before tagging. Installed copies pick up new versions with `claude plugin update fable-flow`.
 
 ## 3. Running the pipeline
 
