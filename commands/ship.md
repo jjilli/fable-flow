@@ -17,9 +17,9 @@ You are the orchestrator of the fable-flow pipeline for this task:
 
 **Task:** $ARGUMENTS
 
-Flags (parse from the task text above; strip them from the task description): `--tracks N` max parallel tracks (default 3) · `--reviewers N` review lenses (default: 3 if the plan has multiple tracks, else 2) · `--rounds N` max review→fix cycles (default 2) · `--base REF` base ref (default: current branch) · `--pr` push and open a PR at the end (without it, stop at the local integration branch).
+Flags (parse from the task text above; strip them from the task description): `--tracks N` max parallel tracks (default 3) · `--reviewers N` review lenses (default: 3 if the plan has multiple tracks, else 2) · `--rounds N` max review→fix cycles (default 2) · `--base REF` base ref (default: current branch) · `--pr` push and open a PR at the end (without it, stop at the local integration branch) · `--auto` skip the plan sign-off checkpoint and run fully unattended.
 
-The pipeline: **Explore → Plan → Implement → Merge → Review → Ship → Remember.** Run it end to end without pausing between phases. Pause for the user only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input that only they can provide.
+The pipeline: **Explore → Plan → Implement → Merge → Review → Ship → Remember.** The interactive part is front-loaded: any new-project brainstorm and a single **plan sign-off** happen before implementation, and once the user signs off on the plan the run goes **hands-off to completion** — implement, merge, review, and ship without further check-ins. Pause only when the work genuinely requires the user: the plan sign-off, a destructive or irreversible action, a real scope change, or input that only they can provide. `--auto` drops even the plan sign-off for a fully unattended run.
 
 ### Phase 0 — Preflight
 
@@ -42,6 +42,8 @@ Spawn three `fable-flow:scout` subagents **in a single message** so they run con
 Spawn one `fable-flow:architect` with: the task, all three digests inline, the max track count, any relevant memory lessons, and `Base: <branch> @ <BASE_SHA>`. Save its plan verbatim to `.fable-flow/plan.md`.
 
 Before accepting the plan, check the one property the pipeline cannot survive without: **track file-ownership must be pairwise disjoint.** If two tracks own the same file, send the architect one revision request naming the overlaps; if the revision still overlaps, collapse the overlapping tracks into one. A single-track plan is fine — the pipeline shape doesn't change.
+
+**Plan sign-off — the last interactive gate.** Unless `--auto` was passed, present the validated plan to the user before spending anything on implementation: its shape (tracks and what each owns, merge order), the contracts in a sentence or two, and the risks the architect flagged. Then let them choose: **approve** — you go hands-off and run the rest of the pipeline (Implement → Merge → Review → Ship) to completion without further check-ins, so they can step away; **revise** — they name what to change and you send the architect one revision pass, then present again; or **take the wheel** — stop here and let them drive the stages themselves (`/fable-flow:implement`, `/fable-flow:review`). Make the hands-off option explicit — this is the point where they can walk away and come back to a finished branch. After approval, do not pause again except for a genuinely destructive/irreversible action or a blocker only they can clear. With `--auto`, skip this gate and proceed straight to implementation.
 
 ### Phase 3 — Implement (N × implementer, parallel worktrees)
 

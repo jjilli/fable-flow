@@ -14,4 +14,4 @@ Run the Plan phase of the fable-flow pipeline.
 4. Save the plan verbatim to `.fable-flow/plan.md`.
 5. Verify track file-ownership is pairwise disjoint. If two tracks own the same file: one revision request to the architect naming the overlaps; if it still overlaps, collapse the overlapping tracks into one and note that you did.
 
-Then report: the plan's shape (tracks, what each owns, merge order), the contracts in one or two sentences, and the risks the architect called out. The deliverable of this command is the plan itself — don't start implementing. Point the user at `/fable-flow:implement` to execute it.
+Then report: the plan's shape (tracks, what each owns, merge order), the contracts in one or two sentences, and the risks the architect called out. The deliverable of this command is the plan itself — don't start implementing. This is the user's sign-off point: they can revise the plan, then run `/fable-flow:implement` and `/fable-flow:review` stage by stage — or hand the whole thing off with `/fable-flow:ship`, which runs this same plan gate and then carries the run to completion (implement → merge → review → ship) without further check-ins.
