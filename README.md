@@ -43,6 +43,6 @@ The pipeline remembers: lessons from every run and iteration are stored in `.fab
 |---|---|
 | Commands | `commands/ship.md`, `explore.md`, `plan.md`, `implement.md`, `review.md`, `iterate.md` |
 | Agents | `agents/scout.md` (Sonnet 5), `architect.md` (Fable 5 · xhigh), `implementer.md` (Fable 5 · medium · worktree), `reviewer.md` (Opus 4.8 · high) |
-| Skills | `skills/fable-prompting/` — the distilled Fable 5 prompting reference · `skills/build-patterns/` — battle-tested engineering patterns and seam traps from long multi-round builds (the recurring "green per track, broken at the seam" failure, reusable patterns, verification discipline beyond a green suite) |
+| Skills | `skills/fable-prompting/` — the distilled Fable 5 prompting reference · `skills/build-patterns/` — battle-tested engineering patterns and seam traps from long multi-round builds (the recurring "green per track, broken at the seam" failure, reusable patterns, verification discipline beyond a green suite) · `skills/frontend-aesthetics/` — how to build UI that looks designed instead of generic, plus headless-screenshot visual verification |
 
 **Read [GUIDE.md](GUIDE.md)** for the full development guide: how the pipeline works, customization, cost/runtime expectations, and how to extend it.

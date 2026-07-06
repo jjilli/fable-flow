@@ -112,6 +112,8 @@ The verbatim steering snippets live in [skills/fable-prompting/SKILL.md](skills/
 
 A companion skill, [skills/build-patterns/SKILL.md](skills/build-patterns/SKILL.md), carries the *engineering* lessons that fable-prompting's *prompting* lessons don't: the recurring integration failure where every track's suite is green but the round is broken at the seam (a background thread, a non-HTTP request scope, a real timing path), the reusable patterns that make later rounds cheaper (provider-adapter, enqueue-only worker, guarded migration, invariant validators that don't break existing input), and the verification discipline a green suite alone doesn't give — one real end-to-end roundtrip per round, a screenshot for UI, deterministic tests for time/IO seams. The architect, implementer, and reviewer prompts each point at it; it also loads automatically when planning/implementing/reviewing hits one of those seams. These aren't Fable-specific — they're what a long multi-round build taught the pipeline about its own blind spots.
 
+A third skill, [skills/frontend-aesthetics/SKILL.md](skills/frontend-aesthetics/SKILL.md), gives the pipeline real UI-design capability so a user-facing track produces something that looks designed rather than generic "AI slop": committing to a design direction, the four dimensions to steer explicitly (distinctive typography, a committed palette, one orchestrated motion moment, atmospheric backgrounds), information architecture for "anyone can use", and the tactics that make a whole-app redesign land as one coherent diff (design-system first, preserve the test hooks, self-host fonts). Crucially it also carries the visual-verification step — serve the built app over seeded data and screenshot it with a headless browser — because a green test suite structurally cannot see a clipped label or an overflowing bar. The architect commits to a direction for UI tracks, and the reviewer looks at the rendered pages, not just the build log.
+
 ## 6. Customization
 
 **Models.** Each agent's `model:` accepts aliases (`sonnet`, `opus`, `haiku`, `fable`), full IDs (`claude-sonnet-5`, `claude-opus-4-8`, `claude-fable-5`), or `inherit` (use the session model). Two common edits:
@@ -144,6 +146,7 @@ fable-flow/
 ├── agents/                  subagent definitions (frontmatter + system prompt)
 ├── skills/fable-prompting/  auto-invocable knowledge skill: how to prompt Fable 5
 ├── skills/build-patterns/   auto-invocable knowledge skill: what breaks and what works when the plan turns into code
+├── skills/frontend-aesthetics/  auto-invocable knowledge skill: designed-not-generic UI + visual verification
 ├── README.md
 └── GUIDE.md
 ```

@@ -17,6 +17,8 @@ You receive: the task requirements, the plan (contracts, tracks, done-when crite
 
 How to work: read the full diff (`git diff <base>...HEAD`), then read the surrounding unchanged code the diff interacts with — most integration bugs live just outside the diff. Run the test suite and the plan's integration verification commands yourself; quote real output. Where a claim matters and is cheap to check, check it.
 
+When the diff is user-facing (a page, component, or restyle), a green build is not the review — **look at it**. Serve the built app over seeded data and screenshot the changed routes with a headless browser, then judge against the `frontend-aesthetics` skill (distinctive type, committed palette, no clipped/overflowing/unconstrained elements, an intuitive layout) and report what the pages actually look like. Layout regressions never show up in the test output.
+
 Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage — the orchestrator does that downstream. Your goal is coverage: it is better to surface a finding that later gets filtered out than to silently drop a real bug. For each finding, include your confidence and an estimated severity so the orchestrator can rank them.
 
 Verify a finding before you file it — a confidently-wrong finding costs a whole round. In particular, before claiming a test is missing, grep for the symbol under test across all test files (coverage often lives in a sibling, not a `<Name>.test` file); and don't build a finding on a capability claim from a comment or a track report without checking the behavior on the real runtime.
