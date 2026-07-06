@@ -17,6 +17,7 @@ What makes a plan good here:
 - **Contracts before tracks.** Any type, function signature, API shape, schema, or file that two tracks both depend on gets defined verbatim in the Contracts section, and the track that owns creating it is named. Implementers code against the contract, not against guesses about each other.
 - **Right-sized splitting.** Split for genuinely independent workstreams, not for symmetry. When you have enough information to act, act; if you are weighing a choice, give a recommendation, not an exhaustive survey.
 - **Scoped to the task.** Don't plan features, refactors, or abstractions beyond what the task requires.
+- **Plan the seam, not just the tracks.** The bug that survives per-track testing usually lives where tracks meet, or where a track meets the live runtime (a background thread, a non-HTTP request scope, a real timing/sampling path). Name the round's riskiest seam, and make Integration verification prove it with one real end-to-end run — a green unit suite is necessary, not sufficient. The `build-patterns` skill catalogs the seams that recur.
 
 Return the plan as your final message, in exactly this format (the orchestrator parses the headings):
 
@@ -44,8 +45,8 @@ Done when: <verifiable completion criteria>
 <sequence and why; note any track that must land first because others' contracts depend on it>
 
 ## Integration verification
-<commands to run on the merged result: full test suite, build, lint, typecheck>
+<commands to run on the merged result: full test suite, build, lint, typecheck — plus ONE concrete end-to-end run that exercises the round's riskiest seam through the real runtime (a real roundtrip / smoke, not a unit test), with the observable result to expect. For a user-facing surface, a headless screenshot against seeded data.>
 
 ## Risks
-<what is most likely to go wrong, and what the reviewer should scrutinize>
+<what is most likely to go wrong, and what the reviewer should scrutinize — lead with the riskiest seam>
 ```

@@ -110,6 +110,8 @@ Fable prompting is different from past models, and this plugin is built around t
 
 The verbatim steering snippets live in [skills/fable-prompting/SKILL.md](skills/fable-prompting/SKILL.md) — that skill is also model-invocable, so Claude will pull it in automatically when you ask it to write or fix Fable-targeted prompts.
 
+A companion skill, [skills/build-patterns/SKILL.md](skills/build-patterns/SKILL.md), carries the *engineering* lessons that fable-prompting's *prompting* lessons don't: the recurring integration failure where every track's suite is green but the round is broken at the seam (a background thread, a non-HTTP request scope, a real timing path), the reusable patterns that make later rounds cheaper (provider-adapter, enqueue-only worker, guarded migration, invariant validators that don't break existing input), and the verification discipline a green suite alone doesn't give — one real end-to-end roundtrip per round, a screenshot for UI, deterministic tests for time/IO seams. The architect, implementer, and reviewer prompts each point at it; it also loads automatically when planning/implementing/reviewing hits one of those seams. These aren't Fable-specific — they're what a long multi-round build taught the pipeline about its own blind spots.
+
 ## 6. Customization
 
 **Models.** Each agent's `model:` accepts aliases (`sonnet`, `opus`, `haiku`, `fable`), full IDs (`claude-sonnet-5`, `claude-opus-4-8`, `claude-fable-5`), or `inherit` (use the session model). Two common edits:
@@ -140,7 +142,8 @@ fable-flow/
 │   └── marketplace.json     makes this repo installable as its own marketplace
 ├── commands/                user-invoked pipeline verbs (flat .md, YAML frontmatter)
 ├── agents/                  subagent definitions (frontmatter + system prompt)
-├── skills/fable-prompting/  auto-invocable knowledge skill
+├── skills/fable-prompting/  auto-invocable knowledge skill: how to prompt Fable 5
+├── skills/build-patterns/   auto-invocable knowledge skill: what breaks and what works when the plan turns into code
 ├── README.md
 └── GUIDE.md
 ```
