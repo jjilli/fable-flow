@@ -114,6 +114,8 @@ A companion skill, [skills/build-patterns/SKILL.md](skills/build-patterns/SKILL.
 
 A third skill, [skills/frontend-aesthetics/SKILL.md](skills/frontend-aesthetics/SKILL.md), gives the pipeline real UI-design capability so a user-facing track produces something that looks designed rather than generic "AI slop": committing to a design direction, the four dimensions to steer explicitly (distinctive typography, a committed palette, one orchestrated motion moment, atmospheric backgrounds), information architecture for "anyone can use", and the tactics that make a whole-app redesign land as one coherent diff (design-system first, preserve the test hooks, self-host fonts). Crucially it also carries the visual-verification step — serve the built app over seeded data and screenshot it with a headless browser — because a green test suite structurally cannot see a clipped label or an overflowing bar. The architect commits to a direction for UI tracks, and the reviewer looks at the rendered pages, not just the build log.
 
+**Clarifying intent before planning — two modes.** For a new or greenfield project, the Plan phase (in both `/fable-flow:plan` and `/fable-flow:ship`) settles the open design and direction decisions with the user *before* the architect plans, via a short series of multiple-choice questions rendered as selectable cards (one decision at a time, a recommended option first, and an option preview — an ASCII mockup, snippet, or layout sketch — where a visual side-by-side helps). Facts are looked up, not asked; only genuine decisions go to the user; answers fold into `.fable-flow/task.md`. This is the default light clarification and it's skipped for a well-specified change to existing code. The heavier [skills/grilling/SKILL.md](skills/grilling/SKILL.md) — a relentless one-question-at-a-time interrogation of the whole design tree (adapted from Matt Pocock) — is **opt-in only**: its description gates it to when the user explicitly asks to be "grilled", so it never fires on ordinary planning.
+
 ## 6. Customization
 
 **Models.** Each agent's `model:` accepts aliases (`sonnet`, `opus`, `haiku`, `fable`), full IDs (`claude-sonnet-5`, `claude-opus-4-8`, `claude-fable-5`), or `inherit` (use the session model). Two common edits:
@@ -147,6 +149,7 @@ fable-flow/
 ├── skills/fable-prompting/  auto-invocable knowledge skill: how to prompt Fable 5
 ├── skills/build-patterns/   auto-invocable knowledge skill: what breaks and what works when the plan turns into code
 ├── skills/frontend-aesthetics/  auto-invocable knowledge skill: designed-not-generic UI + visual verification
+├── skills/grilling/         opt-in skill: relentless plan interrogation (only when the user asks to be "grilled")
 ├── README.md
 └── GUIDE.md
 ```

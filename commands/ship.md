@@ -37,6 +37,8 @@ Spawn three `fable-flow:scout` subagents **in a single message** so they run con
 
 ### Phase 2 — Plan (architect)
 
+**New/greenfield project — brainstorm direction before planning.** When the task is a whole new project or a whole-product brief rather than a change to existing code, the design and direction decisions are input only the user can provide — so pause here (a legitimate stop under Phase 0's rule) and settle them first. Ask a short series of multiple-choice questions rendered as selectable cards: one decision per question, your recommended option first, and an option *preview* (a small ASCII mockup, code snippet, or layout sketch) wherever a visual side-by-side helps them choose. Look up any *fact* yourself; spend their attention only on genuine decisions. Fold the answers into `.fable-flow/task.md`, then plan. For a well-specified change to an existing codebase, skip straight to the architect. (This light card-based clarification is the default; the heavier `grilling` skill runs only when the user explicitly asks to be grilled.)
+
 Spawn one `fable-flow:architect` with: the task, all three digests inline, the max track count, any relevant memory lessons, and `Base: <branch> @ <BASE_SHA>`. Save its plan verbatim to `.fable-flow/plan.md`.
 
 Before accepting the plan, check the one property the pipeline cannot survive without: **track file-ownership must be pairwise disjoint.** If two tracks own the same file, send the architect one revision request naming the overlaps; if the revision still overlaps, collapse the overlapping tracks into one. A single-track plan is fine — the pipeline shape doesn't change.
